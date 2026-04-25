@@ -9,7 +9,7 @@ interface Props {
   player: Player;
   gameState: GameState;
   onSendAction?: (type: PlayerAction['type'], amount?: number) => void;
-  highlight?: 'fold' | 'call' | 'raise' | 'raiseArea' | 'raiseInput' | 'addChips';
+  highlight?: 'fold' | 'check' | 'call' | 'allin' | 'raise' | 'raiseArea' | 'raiseInput' | 'addChips';
   disabledActions?: Partial<Record<PlayerAction['type'], string>>;
 }
 
@@ -136,6 +136,8 @@ export function ActionPanel({ player, gameState, onSendAction, highlight, disabl
             title={getDisabledReason('check') || undefined}
             className="flex-1 min-w-[60px] py-2.5 px-3 rounded-lg font-semibold text-sm
               text-white transition-all active:scale-95 border border-slate-700/50"
+            data-highlight-target="check"
+            data-highlighted={highlight === 'check' ? 'true' : 'false'}
             style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 100%)',
                      boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
                      opacity: isDisabled('check') ? 0.45 : 1,
@@ -174,6 +176,8 @@ export function ActionPanel({ player, gameState, onSendAction, highlight, disabl
             title={getDisabledReason('all_in') || undefined}
             className="flex-1 min-w-[80px] py-2.5 px-3 rounded-lg font-bold text-sm
               text-navy-950 transition-all active:scale-95 border border-gold-600/50 animate-pulse"
+            data-highlight-target="allin"
+            data-highlighted={highlight === 'allin' ? 'true' : 'false'}
             style={{ background: 'linear-gradient(180deg, #f5c842 0%, #b8860b 100%)',
                      boxShadow: '0 2px 10px rgba(212,160,23,0.4)',
                      opacity: isDisabled('all_in') ? 0.45 : 1,
