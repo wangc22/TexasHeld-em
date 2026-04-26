@@ -87,8 +87,8 @@ export class TableManager {
           tableId,
           name: entry.name,
           config: state.config,
-          // Only count real (non-bot) active players
-          playerCount: state.players.filter((p) => !p.isBot && p.status !== 'sitting_out').length,
+          // Only count connected, real (non-bot) active players
+          playerCount: state.players.filter((p) => !p.isBot && p.status !== 'sitting_out' && p.isConnected).length,
           maxPlayers: state.config.maxPlayers,
           phase: state.phase,
           createdAt: 0,
@@ -446,7 +446,7 @@ export class TableManager {
 
     const state = engine.getState();
     const nextHost = state.players.find(
-      (p) => p.id !== leavingPlayerId && !p.isBot && p.isConnected && p.status !== 'sitting_out'
+      (p) => p.id !== leavingPlayerId && !p.isBot && p.status !== 'sitting_out'
     );
 
     entry.hostPlayerId = nextHost?.id ?? null;

@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore.js';
 import { useMusicStore } from '../store/musicStore.js';
 import { MusicPlayer } from '../components/Audio/MusicPlayer.js';
 import { TutorialModal } from '../components/Tutorial/TutorialModal.js';
+import { GuideModal } from '../components/Tutorial/GuideModal.js';
 import { EVENTS } from '@texas-poker/shared';
 import { useLang } from '../i18n/useLang.js';
 import { apiBaseUrl } from '../config/env.js';
@@ -43,13 +44,14 @@ export function LobbyPage({ onJoinTable }: Props) {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [newTableName, setNewTableName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [buyIn, setBuyIn] = useState(1000);
+  const [buyIn, setBuyIn] = useState('1000');
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [chipPreset, setChipPreset] = useState<'Standard' | 'High Stakes' | 'Custom'>('Standard');
   const [customChips, setCustomChips] = useState('2, 5, 10, 20, 50');
-  const [maxHands, setMaxHands] = useState(0);
+  const [maxHands, setMaxHands] = useState('0');
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   const playerName = useAuthStore((s) => s.playerName);
@@ -101,7 +103,7 @@ export function LobbyPage({ onJoinTable }: Props) {
         body: JSON.stringify({
           name: newTableName.trim(),
           chipDenominations: getChipDenominations(),
-          maxHands,
+          maxHands: (() => { const v = parseInt(maxHands, 10); return v > 0 ? Math.min(v, 100) : 0; })(),
         }),
       });
       if (!res.ok) {
@@ -127,7 +129,7 @@ export function LobbyPage({ onJoinTable }: Props) {
       socket.emit(EVENTS.GAME_JOIN_TABLE, {
         tableId,
         playerName: playerName ?? 'Player',
-        buyIn,
+        buyIn: (() => { const v = parseInt(buyIn, 10); return v > 0 ? Math.min(v, 100000) : 1000; })(),
       });
       onJoinTable(tableId);
     };
@@ -175,6 +177,7 @@ export function LobbyPage({ onJoinTable }: Props) {
 
       <MusicPlayer />
       {showTutorial && <TutorialModal onClose={() => setShowTutorial(false)} />}
+      {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
 
       <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 min-h-screen flex flex-col">
 
@@ -188,12 +191,16 @@ export function LobbyPage({ onJoinTable }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowGuide(true)}
+              className="px-3 py-1.5 rounded-xl text-sm font-semibold transition-all active:scale-95"
+              style={{ ...glassPanel, color: '#e2e8f0' }}
+            >
+              {tGame.ruleBtn}
+            </button>
+            <button
               onClick={() => setShowTutorial(true)}
               className="px-3 py-1.5 rounded-xl text-sm font-semibold transition-all active:scale-95"
-              style={{
-                ...glassPanel,
-                color: '#e2e8f0',
-              }}
+              style={{ ...glassPanel, color: '#e2e8f0' }}
             >
               {tGame.tutorialBtn}
             </button>
@@ -242,11 +249,12 @@ export function LobbyPage({ onJoinTable }: Props) {
               <input
                 type="number"
                 value={buyIn}
-                onChange={(e) => setBuyIn(Number(e.target.value))}
+                onChange={(e) => setBuyIn(e.target.value)}
+                onBlur={() => { const v = parseInt(buyIn, 10); setBuyIn(String(v > 0 ? Math.min(v, 100000) : 1000)); }}
+                max={100000}
                 className="w-20 text-white rounded-xl px-2 py-2.5 text-sm focus:outline-none"
                 style={inputStyle}
                 onFocus={e => (e.currentTarget.style.borderColor = 'rgba(212,160,23,0.5)')}
-                onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(100,116,139,0.3)')}
               />
             </div>
             <button
@@ -278,14 +286,15 @@ export function LobbyPage({ onJoinTable }: Props) {
                 <span className="text-xs text-slate-400 whitespace-nowrap">{t.maxHands}</span>
                 <input
                   type="number" min={0} value={maxHands}
-                  onChange={(e) => setMaxHands(Math.max(0, Number(e.target.value)))}
+                  onChange={(e) => setMaxHands(e.target.value)}
+                  onBlur={() => { const v = parseInt(maxHands, 10); setMaxHands(String(v > 0 ? Math.min(v, 100) : 0)); }}
+                  max={100}
                   className="w-20 text-white rounded-lg px-2 py-1.5 text-sm focus:outline-none"
                   style={inputStyle}
                   onFocus={e => (e.currentTarget.style.borderColor = 'rgba(212,160,23,0.5)')}
-                  onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(100,116,139,0.3)')}
                 />
                 <span className="text-xs text-slate-500">
-                  {maxHands === 0 ? t.unlimited : t.handsLabel(maxHands)}
+                  {(parseInt(maxHands, 10) || 0) === 0 ? t.unlimited : t.handsLabel(parseInt(maxHands, 10))}
                 </span>
               </div>
 
@@ -421,7 +430,7 @@ export function LobbyPage({ onJoinTable }: Props) {
           <div
             className="btn-press rounded-2xl p-5 flex flex-col items-start"
             style={glassPanel}
-            onClick={() => setShowTutorial(true)}
+            onClick={() => setShowGuide(true)}
           >
             <div className="text-2xl mb-3">📖</div>
             <div className="text-sm font-semibold text-slate-200 mb-1">{t.howToPlay}</div>

@@ -124,25 +124,53 @@ export class GameEngine {
   }
 
   removePlayer(playerId: string): ActionResult {
-    if (this.state.phase !== 'waiting' && this.state.phase !== 'hand_complete') {
-      // Mark as sitting out instead of removing mid-hand
-      this.state = {
-        ...this.state,
-        players: this.state.players.map((p) =>
-          p.id === playerId ? { ...p, status: 'sitting_out', isConnected: false } : p
-        ),
-      };
+    const player = this.state.players.find((p) => p.id === playerId);
+    if (!player) return { ok: true };
+
+    const activeMidHand = ['pre_flop', 'flop', 'turn', 'river', 'showdown'].includes(this.state.phase);
+
+    if (activeMidHand) {
+      const isCurrentPlayer = player.seatIndex === this.state.currentPlayerSeatIndex;
+
+      // If it's this player's turn, mark them folded before removal so the round advances correctly
+      let players = isCurrentPlayer && player.status === 'active'
+        ? this.state.players.map((p) => p.id === playerId ? { ...p, status: 'folded' as const } : p)
+        : this.state.players;
+
+      // Remove the player entirely — don't keep a sitting_out placeholder
+      players = players.filter((p) => p.id !== playerId);
+      this.state = { ...this.state, players };
       this.emitStateUpdate();
+
+      // If only one non-folded player remains, award the pot immediately
+      const nonFolded = players.filter((p) => p.status !== 'folded' && p.status !== 'sitting_out');
+      if (nonFolded.length === 1) {
+        this.awardPotToLastPlayer(nonFolded[0]);
+        return { ok: true };
+      }
+      if (nonFolded.length === 0) {
+        this.doShowdown(players);
+        return { ok: true };
+      }
+
+      // Advance the hand if it was the leaving player's turn, or if the round is now complete
+      if (isCurrentPlayer || isBettingRoundComplete(this.state.players, this.state.currentBetAmount)) {
+        if (isBettingRoundComplete(this.state.players, this.state.currentBetAmount)) {
+          this.advancePhase();
+        } else {
+          this.advanceTurn();
+        }
+      }
+
       return { ok: true };
     }
+
     const wasHandComplete = this.state.phase === 'hand_complete';
     this.state = {
       ...this.state,
       players: this.state.players.filter((p) => p.id !== playerId),
     };
     this.emitStateUpdate();
-    // If a player leaves during hand_complete, re-check whether remaining players
-    // have all confirmed so the game can proceed instead of getting stuck.
     if (wasHandComplete) {
       this.checkAllConfirmed();
     }

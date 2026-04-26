@@ -5,6 +5,8 @@ import type { BotThought } from '../store/gameStore.js';
 import { EVENTS } from '@texas-poker/shared';
 import type { GameState, HandResult, SessionResult } from '@texas-poker/shared';
 
+const hasActiveGame = () => useGameStore.getState().gameState !== null;
+
 export function useSocketEvents() {
   const { setGameState, setHandResult, setSessionResult, setError, setTurnStart, addBotThought } = useGameStore();
 
@@ -16,11 +18,11 @@ export function useSocketEvents() {
     });
 
     socket.on(EVENTS.GAME_HAND_COMPLETE, (result: HandResult) => {
-      setHandResult(result);
+      if (hasActiveGame()) setHandResult(result);
     });
 
     socket.on(EVENTS.GAME_SESSION_COMPLETE, (result: SessionResult) => {
-      setSessionResult(result);
+      if (hasActiveGame()) setSessionResult(result);
     });
 
     socket.on(EVENTS.GAME_TURN_START, (data: { playerId: string; deadlineMs: number }) => {

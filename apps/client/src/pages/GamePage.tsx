@@ -5,6 +5,7 @@ import { PokerTable } from '../components/Table/PokerTable.js';
 import { ActionPanel } from '../components/Actions/ActionPanel.js';
 import { VoicePanel } from '../components/Voice/VoicePanel.js';
 import { TutorialModal } from '../components/Tutorial/TutorialModal.js';
+import { GuideModal } from '../components/Tutorial/GuideModal.js';
 import { MusicPlayer } from '../components/Audio/MusicPlayer.js';
 import { SessionLeaderboard } from '../components/Game/SessionLeaderboard.js';
 import { HandHistoryPanel } from '../components/Game/HandHistoryPanel.js';
@@ -44,6 +45,7 @@ const headerBtnStyle = {
 
 export function GamePage({ tableId, onLeave }: Props) {
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showBotThoughts, setShowBotThoughts] = useState(false);
   const [botThoughtFilter, setBotThoughtFilter] = useState<string | undefined>(undefined);
@@ -138,7 +140,11 @@ export function GamePage({ tableId, onLeave }: Props) {
   const enoughPlayers = gameState.players.filter((p) => p.chipStack > 0 && !p.isBot).length >= 1
     && gameState.players.filter((p) => p.chipStack > 0).length >= 2;
 
-  const handleLeave = () => { socket.emit(EVENTS.GAME_LEAVE_TABLE, { tableId }); onLeave(); };
+  const handleLeave = () => {
+    socket.emit(EVENTS.GAME_LEAVE_TABLE, { tableId });
+    useGameStore.getState().clearGameState();
+    onLeave();
+  };
   const handleConfirmResult = () => { socket.emit(EVENTS.GAME_CONFIRM_RESULT, { tableId }); };
   const handlePause  = () => { socket.emit(EVENTS.GAME_PAUSE,  { tableId }); };
   const handleResume = () => { socket.emit(EVENTS.GAME_RESUME, { tableId }); };
@@ -156,6 +162,7 @@ export function GamePage({ tableId, onLeave }: Props) {
     <div className="h-screen overflow-hidden text-white flex flex-col" style={{ background: '#060b18' }}>
       <MusicPlayer />
       {showTutorial && <TutorialModal onClose={() => setShowTutorial(false)} />}
+      {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
       {showHistory && (
         <HandHistoryPanel history={gameState.handHistory ?? []} onClose={() => setShowHistory(false)} />
       )}
@@ -279,32 +286,22 @@ export function GamePage({ tableId, onLeave }: Props) {
             </button>
           ))}
 
-          <div className="relative shrink-0 group">
-            <button
-              type="button"
-              onClick={() => setShowTutorial(true)}
-              className="text-sm px-3 py-1 text-slate-300 rounded-md transition-colors hover:text-white"
-              style={headerBtnStyle}
-            >
-              {t.tutorialBtn}
-            </button>
-            <div
-              className="pointer-events-none absolute right-0 top-full z-[80] hidden pt-2 group-hover:block group-hover:pointer-events-auto"
-              role="presentation"
-            >
-              <div
-                className="rounded-lg overflow-hidden border border-slate-600/80 bg-black shadow-2xl"
-                style={{ boxShadow: '0 16px 48px rgba(0,0,0,0.85)' }}
-              >
-                <img
-                  src="/image/hand-ranking.jpg"
-                  alt=""
-                  className="block max-h-[min(78vh,720px)] w-auto max-w-[min(calc(100vw-2rem),520px)] object-contain object-top"
-                  draggable={false}
-                />
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowGuide(true)}
+            className="text-sm px-3 py-1 text-slate-300 rounded-md transition-colors hover:text-white"
+            style={headerBtnStyle}
+          >
+            {t.ruleBtn}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowTutorial(true)}
+            className="text-sm px-3 py-1 text-slate-300 rounded-md transition-colors hover:text-white"
+            style={headerBtnStyle}
+          >
+            {t.tutorialBtn}
+          </button>
 
           <button
             type="button"

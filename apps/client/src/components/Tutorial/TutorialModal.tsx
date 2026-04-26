@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { GuideModal } from './GuideModal.js';
 import { ActionPanel } from '../Actions/ActionPanel.js';
 import { PokerTable } from '../Table/PokerTable.js';
 import { useAuthStore } from '../../store/authStore.js';
@@ -261,6 +262,7 @@ export function TutorialModal({ onClose }: Props) {
   const language = useAuthStore((s) => s.language);
   const [state, setState] = useState<TutorialState>(createInitialTutorialState);
   const [guideStep, setGuideStep] = useState(0);
+  const [showGuide, setShowGuide] = useState(false);
   const [pendingBotAction, setPendingBotAction] = useState<PlayerAction | null>(null);
   const [pendingBotId, setPendingBotId] = useState<string | null>(null);
   const [botBubbles, setBotBubbles] = useState<Record<string, string>>({});
@@ -360,6 +362,7 @@ export function TutorialModal({ onClose }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black z-50" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
       <div className="w-full h-full flex flex-col relative">
         <button
           type="button"
@@ -377,32 +380,15 @@ export function TutorialModal({ onClose }: Props) {
             borderBottom: '1px solid rgba(100,116,139,0.2)',
           }}
         >
-          <div className="relative shrink-0 group mr-[25%]">
-            <button
-              type="button"
-              className="text-sm px-3 py-1 text-slate-300 rounded-md transition-colors hover:text-white"
-              style={{ background: 'rgba(21,32,64,0.6)', border: '1px solid rgba(100,116,139,0.3)' }}
-              data-highlighted={tutorialHighlight === 'ruleBtn' ? 'true' : 'false'}
-            >
-              Rule
-            </button>
-            <div
-              className="pointer-events-none absolute right-0 top-full z-[80] hidden pt-2 group-hover:block group-hover:pointer-events-auto"
-              role="presentation"
-            >
-              <div
-                className="rounded-lg overflow-hidden border border-slate-600/80 bg-black shadow-2xl"
-                style={{ boxShadow: '0 16px 48px rgba(0,0,0,0.85)' }}
-              >
-                <img
-                  src="/image/hand-ranking.jpg"
-                  alt=""
-                  className="block max-h-[min(78vh,720px)] w-auto max-w-[min(calc(100vw-2rem),520px)] object-contain object-top"
-                  draggable={false}
-                />
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowGuide(true)}
+            className="text-sm px-3 py-1 text-slate-300 rounded-md transition-colors hover:text-white mr-[25%]"
+            style={{ background: 'rgba(21,32,64,0.6)', border: '1px solid rgba(100,116,139,0.3)' }}
+            data-highlighted={tutorialHighlight === 'ruleBtn' ? 'true' : 'false'}
+          >
+            {language === 'zh' ? '📖 图文教程' : '📖 Guide'}
+          </button>
         </div>
 
         <div className="w-full flex-1 min-h-0 p-2 overflow-hidden relative" style={{ background: 'radial-gradient(ellipse 55% 45% at 50% 50%, rgba(21,32,64,0.5) 0%, transparent 100%)' }}>

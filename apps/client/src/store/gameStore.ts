@@ -44,8 +44,11 @@ export const useGameStore = create<GameStore>((set) => ({
 
   setTableId: (id) => set({ tableId: id }),
   setGameState: (state) => set((s) => {
-    // Clear bot thoughts when a new hand starts so the log only shows the current hand.
-    const newHand = s.gameState !== null && state.handNumber > s.gameState.handNumber;
+    // Different table or fresh after clearGameState — wipe stale results
+    if (!s.gameState || s.gameState.tableId !== state.tableId) {
+      return { gameState: state, lastHandResult: null, sessionResult: null, botThoughts: [] };
+    }
+    const newHand = state.handNumber > s.gameState.handNumber;
     return newHand ? { gameState: state, botThoughts: [] } : { gameState: state };
   }),
   setHandResult: (result) => set({ lastHandResult: result }),

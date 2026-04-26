@@ -18,6 +18,7 @@ type PeerConnections = Record<string, RTCPeerConnection>;
 export function VoicePanel({ tableId, playerId }: Props) {
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
   const localStream = useRef<MediaStream | null>(null);
   const peerConnections = useRef<PeerConnections>({});
   const audioElements = useRef<Record<string, HTMLAudioElement>>({});
@@ -29,6 +30,11 @@ export function VoicePanel({ tableId, playerId }: Props) {
   };
 
   const joinVoice = async () => {
+    setVoiceError('');
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setVoiceError('需要 HTTPS 才能使用语音');
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       localStream.current = stream;
@@ -36,7 +42,7 @@ export function VoicePanel({ tableId, playerId }: Props) {
       socket.emit(EVENTS.VOICE_JOIN, { tableId });
     } catch (err) {
       console.error('Microphone access denied:', err);
-      alert('Please allow microphone access to use voice chat.');
+      setVoiceError('麦克风权限被拒绝');
     }
   };
 
@@ -166,12 +172,15 @@ export function VoicePanel({ tableId, playerId }: Props) {
       <span className="text-sm text-gray-400">Voice:</span>
 
       {!joined ? (
-        <button
-          onClick={joinVoice}
-          className="text-sm px-3 py-1 bg-green-700 hover:bg-green-600 text-white rounded-md transition-colors"
-        >
-          🎙️ Join
-        </button>
+        <>
+          <button
+            onClick={joinVoice}
+            className="text-sm px-3 py-1 bg-green-700 hover:bg-green-600 text-white rounded-md transition-colors"
+          >
+            🎙️ Join
+          </button>
+          {voiceError && <span className="text-red-400 text-xs max-w-[160px] truncate" title={voiceError}>{voiceError}</span>}
+        </>
       ) : (
         <>
           <button
